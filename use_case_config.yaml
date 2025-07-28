@@ -1,33 +1,78 @@
 use_case:
   name: retail
+  generation:
+    records_per_primary_key:
+      distribution:
+        type: lognormal
+        parameters:
+          mu: 3.5
+          sigma: 0.75
   schema:
     fields:
       - name: transaction_id
         type: integer
-        range: [1, 100000]
+        distribution:
+          type: sequential
+          parameters:
+            start: 1
+            step: 1
+        nullable: false
       - name: date
         type: datetime
+        distribution:
+          type: sequential
+          parameters:
+           start: "2023-01-01"
+           step: 1
+        nullable: false
       - name: store_id
         type: integer
-      - name: cashier_id
-        type: integer
+        distribution:
+          type: weighted_choice
+          parameters:
+            values: [1, 2, 3, 4, 5]
+            weights: [0.5, 0.3, 0.2]
+        nullable: false
+      - name: customer_id
+        type: string
+        distribution:
+          type: uniform
+          parameters:
+            min: 1000
+            max: 1999
+        nullable: false
       - name: product_id
         type: integer
+        distribution:
+          type: weighted_choice
+          parameters:
+            values: []
+            weights: []
+        nullable: false
       - name: product_name
         type: choice
         values: [A, B, C]
-      - name: category
-        type: choice
-        values: [A, B, C]
+        nullable: false
       - name: quantity
         type: integer
+        distribution:
+          type: uniform
+          parameters:
+            min: 1
+            max: 100
+        nullable: false
       - name: unit_price
-        type: integer
-        range: [0, 1000]
-      - name: total_price
         type: float
+        distribution:
+          type: lognormal
+          parameters:
+            mu: 3.5
+            sigma: 0.75
+        nullable: false
       - name: payment_method
-        type: choice
-        values: [A, B, C]
-      - name: customer_id
         type: string
+        distribution:
+          type: weighted_choice
+          parameters:
+            values: [credit_card, cash, store_credit]
+            weights: [0.8, 0.15, 0.05]
