@@ -1,0 +1,33 @@
+use_case:
+  name: retail
+  schema:
+    fields:
+      - name: transaction_id
+        type: integer
+        range: [1, 100000]
+      - name: date
+        type: datetime
+      - name: store_id
+        type: integer
+      - name: cashier_id
+        type: integer
+      - name: product_id
+        type: integer
+      - name: product_name
+        type: choice
+        values: [A, B, C]
+      - name: category
+        type: choice
+        values: [A, B, C]
+      - name: quantity
+        type: integer
+      - name: unit_price
+        type: integer
+        range: [0, 1000]
+      - name: total_price
+        type: float
+      - name: payment_method
+        type: choice
+        values: [A, B, C]
+      - name: customer_id
+        type: string
