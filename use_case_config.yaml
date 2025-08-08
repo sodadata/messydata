@@ -1,5 +1,6 @@
 use_case:
   name: retail
+  primary_key: id
   generation:
     records_per_primary_key:
       distribution:
@@ -36,42 +37,47 @@ use_case:
           weights: [0.6, 0.4]
   schema:
     fields:
-      - name: transaction_id
-        type: integer
+      - name: id
+        unique_per_id: True
+        dtype: int32
         distribution:
           type: sequential
           parameters:
             start: 1
             step: 1
-        nullable: false
+        nullable: False
       - name: date
-        type: "%Y-%m-%d"
+        unique_per_id: True
+        dtype: "%Y-%m-%d"
         distribution:
           type: sequential
           parameters:
            start: "2023-01-01"
            step: 1
-        nullable: false
+        nullable: False
       - name: store_id
-        type: integer
+        unique_per_id: True
+        dtype: int32
         distribution:
           type: weighted_choice
           parameters:
             values: [1, 2, 3, 4, 5]
-            weights: [0.5, 0.3, 0.2]
-        nullable: false
+            weights: [0.5, 0.2, 0.1, 0.1, 0.1]
+        nullable: False
       - name: customer_id
-        type: string
+        unique_per_id: True
+        dtype: int32
         distribution:
           type: uniform
           parameters:
             min: 1000
             max: 1999
-        nullable: false
+        nullable: False
       - name: product
-        type: mapping
+        unique_per_id: False
+        dtype: str
         distribution:
-          type: weighted_choice
+          type: mapping
           parameters:
             mapping:
               - {product_id: 1001, product_name: "Product A", probability: 0.4}
@@ -79,28 +85,31 @@ use_case:
               - {product_id: 1003, product_name: "Product C", probability: 0.2}
               - {product_id: 1004, product_name: "Product D", probability: 0.1}
               - {product_id: 1005, product_name: "Product E", probability: 0.1}
-        nullable: false
+        nullable: False
       - name: quantity
-        type: integer
+        unique_per_id: False
+        dtype: int32
         distribution:
           type: uniform
           parameters:
             min: 1
-            max: 100
-        nullable: false
+            max: 10
+        nullable: False
       - name: unit_price
-        type: float
+        unique_per_id: False
+        dtype: float32
         distribution:
           type: lognormal
           parameters:
             mu: 3.5
             sigma: 0.75
-        nullable: false
+        nullable: False
       - name: payment_method
-        type: string
+        unique_per_id: True
+        dtype: str
         distribution:
           type: weighted_choice
           parameters:
             values: ["credit_card", "cash", "store_credit"]
             weights: [0.8, 0.15, 0.05]
-        nullable: false
+        nullable: False
