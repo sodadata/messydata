@@ -7,6 +7,33 @@ use_case:
         parameters:
           mu: 3.5
           sigma: 0.75
+    injection_gaps:
+      distribution:
+        type: random
+        parameters:
+          threshold: 0.9
+  anomalies:
+    - name: missing_values
+      distribution:
+        type: random
+        parameters:
+          threshold: 0.9
+    - name: duplicate_values
+      distribution:
+        type: random
+        parameters:
+          threshold: 0.9
+    - name: invalid_values
+      distribution:
+        type: random
+        parameters:
+          threshold: 0.9
+    - name: invalid_date
+      distribution:
+        type: weighted_choice
+        parameters:
+          values: ["%m/%d/%Y", "%Y-%m-%dT%H:%M:%SZ"]
+          weights: [0.6, 0.4]
   schema:
     fields:
       - name: transaction_id
@@ -18,7 +45,7 @@ use_case:
             step: 1
         nullable: false
       - name: date
-        type: datetime
+        type: "%Y-%m-%d"
         distribution:
           type: sequential
           parameters:
@@ -41,17 +68,17 @@ use_case:
             min: 1000
             max: 1999
         nullable: false
-      - name: product_id
-        type: integer
+      - name: product
+        type: mapping
         distribution:
           type: weighted_choice
           parameters:
-            values: []
-            weights: []
-        nullable: false
-      - name: product_name
-        type: choice
-        values: [A, B, C]
+            mapping:
+              - {product_id: 1001, product_name: "Product A", probability: 0.4}
+              - {product_id: 1002, product_name: "Product B", probability: 0.2}
+              - {product_id: 1003, product_name: "Product C", probability: 0.2}
+              - {product_id: 1004, product_name: "Product D", probability: 0.1}
+              - {product_id: 1005, product_name: "Product E", probability: 0.1}
         nullable: false
       - name: quantity
         type: integer
@@ -74,5 +101,6 @@ use_case:
         distribution:
           type: weighted_choice
           parameters:
-            values: [credit_card, cash, store_credit]
+            values: ["credit_card", "cash", "store_credit"]
             weights: [0.8, 0.15, 0.05]
+        nullable: false
