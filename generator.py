@@ -4,7 +4,6 @@ import pandas as pd
 from faker import Faker
 from datetime import datetime
 
-USE_CASE_CONFIG_PATH = 'use_case_config.yaml'
 
 def load_config(path=USE_CASE_CONFIG_PATH):
     with open(path, 'r') as f:
@@ -96,8 +95,9 @@ def persist_data(data):
     data.to_csv('data/data.csv', index=False)
 
 if __name__ == "__main__":
+    USE_CASE_CONFIG_PATH = 'use_case_config.yaml'
     print("Loading config file")
-    config = load_config()
+    config = load_config(USE_CASE_CONFIG_PATH)
     print("Generating data...")
     data = generate_data(config)
     print(f"Generated rows: {len(data)}")
