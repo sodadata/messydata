@@ -5,7 +5,7 @@ from faker import Faker
 from datetime import datetime
 
 
-def load_config(path=USE_CASE_CONFIG_PATH):
+def load_config(path):
     with open(path, 'r') as f:
         return yaml.safe_load(f)['use_case']
 
