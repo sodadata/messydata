@@ -77,14 +77,10 @@ use_case:
         unique_per_id: False
         dtype: str
         distribution:
-          type: mapping
+          type: weighted_choice_mapping
           parameters:
-            mapping:
-              - {product_id: 1001, product_name: "Product A", probability: 0.4}
-              - {product_id: 1002, product_name: "Product B", probability: 0.2}
-              - {product_id: 1003, product_name: "Product C", probability: 0.2}
-              - {product_id: 1004, product_name: "Product D", probability: 0.1}
-              - {product_id: 1005, product_name: "Product E", probability: 0.1}
+            columns: {product_id: [1001, 1002, 1003, 1004, 1005], product_name: ["A", "B", "C", "D", "E"]}
+            weights: [0.4, 0.2, 0.2, 0.1, 0.1]
         nullable: False
       - name: quantity
         unique_per_id: False

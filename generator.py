@@ -76,6 +76,13 @@ def generate_data(config, n_rows=1000, seed=42):
                     current_batch[name] = np.random.choice(a=values,
                                                           p=weights,
                                                           size=n_records_per_primary_key).astype(dtype)
+            elif distribution['type'] == 'weighted_choice_mapping':
+                weights = distribution['parameters']['weights']
+                values_index = [i for i in range(0, len(weights))]
+                choosen_index = np.random.choice(a=values_index, p=weights, size=1)[0]
+                for name in distribution['parameters']['columns']:
+                    value = distribution['parameters']['columns'][name][choosen_index]
+                    current_batch[name] = value
         all_batches.append(pd.DataFrame(current_batch))
         n_generated_rows += n_records_per_primary_key
     data = pd.concat(all_batches).reset_index(drop=True)
