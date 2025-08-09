@@ -1,4 +1,3 @@
-from operator import index
 import yaml
 import numpy as np
 import pandas as pd
