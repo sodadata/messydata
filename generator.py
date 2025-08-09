@@ -1,3 +1,4 @@
+from operator import index
 import yaml
 import numpy as np
 import pandas as pd
@@ -11,7 +12,6 @@ def load_config(path=USE_CASE_CONFIG_PATH):
         return yaml.safe_load(f)['use_case']
 
 def generate_data(config, n_rows=1000, seed=42):
-    print("Generating data...")
     fake = Faker()
     if seed is not None:
         np.random.seed(seed)
@@ -79,19 +79,27 @@ def generate_data(config, n_rows=1000, seed=42):
             elif distribution['type'] == 'weighted_choice_mapping':
                 weights = distribution['parameters']['weights']
                 values_index = [i for i in range(0, len(weights))]
-                choosen_index = np.random.choice(a=values_index, p=weights, size=1)[0]
+                choosen_indexes = np.random.choice(a=values_index, p=weights, size=n_records_per_primary_key)
                 for name in distribution['parameters']['columns']:
-                    value = distribution['parameters']['columns'][name][choosen_index]
-                    current_batch[name] = value
+                    values = [
+                        distribution['parameters']['columns'][name][index]
+                        for index in choosen_indexes
+                    ]
+                    current_batch[name] = values
         all_batches.append(pd.DataFrame(current_batch))
         n_generated_rows += n_records_per_primary_key
     data = pd.concat(all_batches).reset_index(drop=True)
     return data
 
 
+def persist_data(data):
+    # TODO: this function should the daily generated data in a DB
+    data.to_csv('data/data.csv', index=False)
+
 if __name__ == "__main__":
+    print("Loading config file")
     config = load_config()
+    print("Generating data...")
     data = generate_data(config)
-    print(data.head())
-    print(data.tail())
-    print(data.shape)
+    print(f"Generated rows: {len(data)}")
+    persist_data(data)
