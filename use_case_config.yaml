@@ -12,29 +12,33 @@ use_case:
       distribution:
         type: random
         parameters:
-          threshold: 0.9
+          prob: 0.1
   anomalies:
     - name: missing_values
       distribution:
         type: random
         parameters:
-          threshold: 0.9
+          prob: 0.1
+      columns: any
     - name: duplicate_values
       distribution:
         type: random
         parameters:
-          threshold: 0.9
-    - name: invalid_values
+          prob: 0.1
+      columns: any
+    - name: invalid_category
       distribution:
         type: random
         parameters:
-          threshold: 0.9
+          prob: 0.1
+      columns: ['product_id', 'product_name', 'payment_method']
     - name: invalid_date
       distribution:
         type: weighted_choice
         parameters:
           values: ["%m/%d/%Y", "%Y-%m-%dT%H:%M:%SZ"]
           weights: [0.6, 0.4]
+      columns: any
   schema:
     fields:
       - name: id
