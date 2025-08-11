@@ -19,26 +19,29 @@ use_case:
         type: random
         parameters:
           prob: 0.1
+          rate: 0.1
       columns: any
     - name: duplicate_values
       distribution:
         type: random
         parameters:
           prob: 0.1
+          rate: 0.1
       columns: any
     - name: invalid_category
       distribution:
         type: random
         parameters:
           prob: 0.1
+          rate: 0.1
       columns: ['product_id', 'product_name', 'payment_method']
     - name: invalid_date
       distribution:
-        type: weighted_choice
+        type: random
         parameters:
-          values: ["%m/%d/%Y", "%Y-%m-%dT%H:%M:%SZ"]
-          weights: [0.6, 0.4]
-      columns: any
+          prob: 0.1
+          rate: 0.1
+      columns: ['date']
   schema:
     fields:
       - name: id

@@ -1,19 +1,22 @@
+import yaml
 import pandas as pd
 import numpy as np
+
+def load_config(path):
+    with open(path, 'r') as f:
+        return yaml.safe_load(f)['use_case']
 
 def load_data(path):
     data = pd.read_csv(path)
     return data
 
-def inject_duplicates(df):
-    rate = np.random.random()
+def inject_duplicates(df, rate):
     n_dup = int(len(df) * rate)
     dup_rows = df.sample(n=n_dup, replace=True)
     return pd.concat([df, dup_rows], ignore_index=True)
 
 
-def inject_missing(df):
-    rate = np.random.random()
+def inject_missing(df, rate):
     n_cells = int(df.size * rate)
     for _ in range(n_cells):
         i = np.random.randint(0, len(df))
@@ -22,9 +25,10 @@ def inject_missing(df):
     return df
 
 
-def inject_invalid_category(df, category_cols=[], bad_value='Z'):
-    rate = np.random.random()
-    for category_col in category_cols:
+def inject_invalid_category(df, rate, cat_cols=[], bad_value='Z'):
+    return df
+    # TODO: rewrite this to make it make sense
+    for category_col in cat_cols:
         n_bad = int(len(df) * rate)
         idx = np.random.choice(df.index, n_bad, replace=False)
         df.loc[idx, category_col] = bad_value
@@ -33,28 +37,32 @@ def inject_invalid_category(df, category_cols=[], bad_value='Z'):
 
 
 def inject_anomalies(config, df):
-    duplicates_config = config['anomalies']['duplicate_values']
-    missing_config = config['anomalies']['missing_values']
-    invalid_cat_config = config['anomalies']['invalid_category']
+    for anomaly in config['anomalies']:
+        name = anomaly['name']
+        print(name)
+        prob = anomaly['distribution']['parameters']['prob']
+        rate = anomaly['distribution']['parameters']['rate']
+        cols = anomaly['columns']
+        
+        if name == 'missing_values':
+            if np.random.random() >= 1 - prob:
+                df = inject_missing(df, rate)
+        elif name == 'duplicate_values':
+            if np.random.random() >= 1 - prob:
+                df = inject_duplicates(df, rate)
+        elif name == 'invalid_category':
+            if np.random.random() >= 1 - prob:
+                df = inject_invalid_category(df, cols, rate)
+        elif name == 'invalid_date':
+            pass
+    return df
 
-    duplicates_prob = duplicates_config['distribution']['parameters']['prob']
-    missing_prob = missing_config['distribution']['parameters']['prob']
-    invalid_cat_prob = invalid_cat_config['distribution']['parameters']['prob']
 
-    duplicates_rate = duplicates_config['distribution']['parameters']['rate']
-    missing_rate = missing_config['distribution']['parameters']['rate']
-    invalid_cat_rate = invalid_cat_config['distribution']['parameters']['rate']
-
-    if np.random.random() >= 1 -duplicates_prob:
-        df = inject_duplicates(df, duplicates_rate)
-    if np.random.random() >= 1 - missing_prob:
-        df = inject_missing(df, missing_rate)
-    if np.random.random() >= 1 - invalid_cat_prob:
-        df = inject_invalid_category(df, invalid_cat_rate)
-
+USE_CASE_CONFIG_PATH = 'use_case_config.yaml'
+config = load_config(USE_CASE_CONFIG_PATH)
 PATH = "data/data.csv"
 data = load_data(PATH)
 
 print(data.shape)
-bad_data = inject_missing(data, 0.1)
+bad_data = inject_anomalies(config, data)
 print(bad_data.head())
