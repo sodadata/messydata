@@ -13,7 +13,11 @@ dependencies = [
     "pandas",
     "faker",
     "pydantic>=2.12.5",
+    "click>=8.1.8",
 ]
 
 [project.optional-dependencies]
 dev = ["pytest"]
+
+[project.scripts]
+quasidata = "quasidata.cli:main"

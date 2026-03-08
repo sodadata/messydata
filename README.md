@@ -6,6 +6,21 @@ QuasiData generates structured datasets from a declarative config and injects co
 
 ---
 
+## Claude Code Skill
+
+QuasiData ships with a Claude Code skill at `.claude/skills/quasidata/SKILL.md`. When working in a project that has QuasiData installed, Claude Code picks it up automatically and knows how to write configs, validate them, and use the CLI — no extra setup needed.
+
+To install it globally so it's available in any project:
+
+```bash
+mkdir -p ~/.claude/skills/quasidata
+cp .claude/skills/quasidata/SKILL.md ~/.claude/skills/quasidata/SKILL.md
+```
+
+Then invoke it with `/quasidata` in any Claude Code session.
+
+---
+
 ## Install
 
 ```bash
