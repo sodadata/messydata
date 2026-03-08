@@ -8,7 +8,7 @@ QuasiData generates structured datasets from a declarative config and injects co
 
 ## Claude Code Skill
 
-QuasiData includes a Claude Code skill that teaches any agent how to write configs, validate them, and use the CLI. [Download `SKILL.md`](.claude/skills/quasidata/SKILL.md) and place it at:
+QuasiData includes a Claude Code skill that teaches any agent how to write configs, validate them, and use the CLI. Download [`SKILL.md`](SKILL.md) and place it at:
 
 ```
 ~/.claude/skills/quasidata/SKILL.md
