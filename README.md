@@ -33,7 +33,41 @@ pip install quasidata
 
 ## Quick Start
 
-### YAML (recommended)
+### With a Claude Code agent (fastest)
+
+With the skill installed, just describe what you need in plain English:
+
+```
+/quasidata generate a retail transactions dataset with 1000 rows — include
+product catalog, customer region, payment method, and realistic price distribution.
+Save it to retail.csv.
+```
+
+The agent will write the YAML config, validate it, and run the CLI to produce the file — no manual config writing needed.
+
+---
+
+### CLI
+
+```bash
+# Generate to a file (format inferred from extension)
+quasidata generate my_config.yaml --rows 1000 --seed 42 --output data.csv
+quasidata generate my_config.yaml --rows 1000 --output data.parquet
+quasidata generate my_config.yaml --rows 1000 --output data.json
+
+# Stream to stdout
+quasidata generate my_config.yaml --rows 1000
+
+# Validate a config without generating (exits 0/1 — useful in CI and agent loops)
+quasidata validate my_config.yaml
+
+# Print the full JSON Schema for the config format
+quasidata schema
+```
+
+---
+
+### YAML + Python
 
 ```yaml
 # my_config.yaml
