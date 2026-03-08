@@ -1,65 +1,53 @@
 import numpy as np
 import pandas as pd
-from faker import Faker
-from datetime import datetime
+
+from .distributions import Sequential, WeightedChoiceMapping
+from .schema import DatasetSchema
 
 
-def generate_data(config, n_rows=1000, seed=42):
-    fake = Faker()
+def generate_data(schema: DatasetSchema, n_rows: int = 1000, seed: int = 42) -> pd.DataFrame:
     if seed is not None:
         np.random.seed(seed)
-        fake.seed_instance(seed)
 
-    fields = config['schema']['fields']
-    n_generated_rows = 0
-    all_batches = []
+    # Initialise sequential state for each sequential field
+    seq_state: dict[str, object] = {}
+    for field in schema.fields:
+        if isinstance(field.distribution, Sequential):
+            seq_state[field.name] = field.distribution.initial()
 
-    while n_generated_rows < n_rows:
-        pk_dist = config['generation']['records_per_primary_key']['distribution']
-        if pk_dist['type'] == 'lognormal':
-            n = int(np.random.lognormal(
-                pk_dist['parameters']['mu'],
-                pk_dist['parameters']['sigma']))
-        else:
-            raise ValueError(f"Unsupported distribution type: {pk_dist['type']}")
+    n_generated = 0
+    all_batches: list[pd.DataFrame] = []
 
-        batch = {
-            'id': np.repeat(fake.uuid4(), n),
-            'date': np.repeat(datetime.today().date(), n),
-        }
+    while n_generated < n_rows:
+        n = max(1, int(schema.records_per_primary_key.sample(1)[0]))
+        batch: dict[str, object] = {}
 
-        for field in fields:
-            name = field['name']
-            dist = field['distribution']
-            dtype = field['dtype']
-            unique = field.get('unique_per_id', False)
+        for field in schema.fields:
+            dist = field.distribution
+            unique = field.unique_per_id
 
-            if dist['type'] == 'uniform':
-                lo, hi = dist['parameters']['min'], dist['parameters']['max']
-                sample = np.random.uniform(low=lo, high=hi, size=1 if unique else n).astype(dtype)
-                batch[name] = np.repeat(sample, n) if unique else sample
+            if isinstance(dist, Sequential):
+                val = seq_state[field.name]
+                batch[field.name] = np.repeat(val, n)
+                seq_state[field.name] = dist.advance(val)
 
-            elif dist['type'] == 'lognormal':
-                mu, sigma = dist['parameters']['mu'], dist['parameters']['sigma']
-                sample = np.random.lognormal(mean=mu, sigma=sigma, size=1 if unique else n).astype(dtype)
-                batch[name] = np.repeat(sample, n) if unique else sample
+            elif isinstance(dist, WeightedChoiceMapping):
+                # Returns dict of column_name -> list; ignore field.name
+                for col, values in dist.sample(n).items():
+                    batch[col] = values
 
-            elif dist['type'] == 'weighted_choice':
-                values = dist['parameters']['values']
-                weights = dist['parameters']['weights']
-                sample = np.random.choice(a=values, p=weights, size=1 if unique else n).astype(dtype)
-                batch[name] = np.repeat(sample, n) if unique else sample
-
-            elif dist['type'] == 'weighted_choice_mapping':
-                weights = dist['parameters']['weights']
-                indexes = np.random.choice(len(weights), p=weights, size=n)
-                for col, col_values in dist['parameters']['columns'].items():
-                    batch[col] = [col_values[i] for i in indexes]
-
-            elif dist['type'] in ('sequential',):
-                pass  # handled outside the field loop (id, date)
+            else:
+                sample = dist.sample(1 if unique else n)
+                if unique:
+                    sample = np.repeat(sample, n)
+                # Apply dtype where possible
+                try:
+                    sample = np.array(sample).astype(field.dtype)
+                except (TypeError, ValueError):
+                    pass
+                batch[field.name] = sample
 
         all_batches.append(pd.DataFrame(batch))
-        n_generated_rows += n
+        n_generated += n
 
-    return pd.concat(all_batches).reset_index(drop=True)
+    return pd.concat(all_batches, ignore_index=True)

@@ -1,14 +1,16 @@
 import numpy as np
 import pandas as pd
 
+from .schema import DatasetSchema
 
-def inject_duplicates(df, rate):
+
+def inject_duplicates(df: pd.DataFrame, rate: float) -> pd.DataFrame:
     n_dup = int(len(df) * rate)
     dup_rows = df.sample(n=n_dup, replace=True)
     return pd.concat([df, dup_rows], ignore_index=True)
 
 
-def inject_missing(df, rate):
+def inject_missing(df: pd.DataFrame, rate: float) -> pd.DataFrame:
     n_cells = int(df.size * rate)
     for _ in range(n_cells):
         i = np.random.randint(0, len(df))
@@ -17,45 +19,64 @@ def inject_missing(df, rate):
     return df
 
 
-def inject_invalid_category(df, rate, cat_cols, bad_value='INVALID'):
+def inject_invalid_category(
+    df: pd.DataFrame, rate: float, cat_cols: list[str], bad_value: str = "INVALID"
+) -> pd.DataFrame:
     df = df.copy()
     n_bad = int(len(df) * rate)
     for col in cat_cols:
         if col not in df.columns:
             continue
-        idx = np.random.choice(df.index, size=n_bad, replace=False)
+        idx = np.random.choice(df.index, size=min(n_bad, len(df)), replace=False)
         df[col] = df[col].astype(object)
         df.loc[idx, col] = bad_value
     return df
 
 
-def inject_invalid_date(df, rate, date_cols, bad_value='9999-99-99'):
+def inject_invalid_date(
+    df: pd.DataFrame, rate: float, date_cols: list[str], bad_value: str = "9999-99-99"
+) -> pd.DataFrame:
     df = df.copy()
     n_bad = int(len(df) * rate)
     for col in date_cols:
         if col not in df.columns:
             continue
         df[col] = df[col].astype(str)
-        idx = np.random.choice(df.index, size=n_bad, replace=False)
+        idx = np.random.choice(df.index, size=min(n_bad, len(df)), replace=False)
         df.loc[idx, col] = bad_value
     return df
 
 
-def inject_anomalies(config, df):
-    for anomaly in config['anomalies']:
-        name = anomaly['name']
-        prob = anomaly['distribution']['parameters']['prob']
-        rate = anomaly['distribution']['parameters']['rate']
-        cols = anomaly['columns']
+def inject_outliers(df: pd.DataFrame, rate: float, cols: list[str], distribution) -> pd.DataFrame:
+    df = df.copy()
+    n_bad = int(len(df) * rate)
+    for col in cols:
+        if col not in df.columns:
+            continue
+        idx = np.random.choice(df.index, size=min(n_bad, len(df)), replace=False)
+        values = distribution.sample(len(idx))
+        df.loc[idx, col] = values.astype(df[col].dtype)
+    return df
 
-        if np.random.random() > 1 - prob:
-            if name == 'missing_values':
-                df = inject_missing(df, rate)
-            elif name == 'duplicate_values':
-                df = inject_duplicates(df, rate)
-            elif name == 'invalid_category':
-                df = inject_invalid_category(df, rate, cat_cols=cols)
-            elif name == 'invalid_date':
-                df = inject_invalid_date(df, rate, date_cols=cols)
 
+def inject_anomalies(schema: DatasetSchema, df: pd.DataFrame) -> pd.DataFrame:
+    for anomaly in schema.anomalies:
+        if np.random.random() > 1 - anomaly.prob:
+            cols = anomaly.columns
+            if anomaly.name == "missing_values":
+                df = inject_missing(df, anomaly.rate)
+            elif anomaly.name == "duplicate_values":
+                df = inject_duplicates(df, anomaly.rate)
+            elif anomaly.name == "invalid_category":
+                if cols == "any":
+                    cols = list(df.select_dtypes(include="object").columns)
+                df = inject_invalid_category(df, anomaly.rate, cat_cols=cols)
+            elif anomaly.name == "invalid_date":
+                if cols == "any":
+                    cols = [c for c in df.columns if "date" in c.lower()]
+                df = inject_invalid_date(df, anomaly.rate, date_cols=cols)
+            elif anomaly.name == "outliers":
+                if cols == "any":
+                    cols = list(df.select_dtypes(include="number").columns)
+                df = inject_outliers(df, anomaly.rate, cols=cols, distribution=anomaly.distribution)
     return df

@@ -12,6 +12,7 @@ dependencies = [
     "numpy",
     "pandas",
     "faker",
+    "pydantic>=2.12.5",
 ]
 
 [project.optional-dependencies]
