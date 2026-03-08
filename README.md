@@ -8,13 +8,10 @@ QuasiData generates structured datasets from a declarative config and injects co
 
 ## Claude Code Skill
 
-QuasiData ships with a Claude Code skill at `.claude/skills/quasidata/SKILL.md`. When working in a project that has QuasiData installed, Claude Code picks it up automatically and knows how to write configs, validate them, and use the CLI — no extra setup needed.
+QuasiData includes a Claude Code skill that teaches any agent how to write configs, validate them, and use the CLI. [Download `SKILL.md`](.claude/skills/quasidata/SKILL.md) and place it at:
 
-To install it globally so it's available in any project:
-
-```bash
-mkdir -p ~/.claude/skills/quasidata
-cp .claude/skills/quasidata/SKILL.md ~/.claude/skills/quasidata/SKILL.md
+```
+~/.claude/skills/quasidata/SKILL.md
 ```
 
 Then invoke it with `/quasidata` in any Claude Code session.
@@ -38,9 +35,10 @@ pip install quasidata
 With the skill installed, just describe what you need in plain English:
 
 ```
-/quasidata generate a retail transactions dataset with 1000 rows — include
-product catalog, customer region, payment method, and realistic price distribution.
-Save it to retail.csv.
+/quasidata generate a retail transactions dataset with 1000 rows. Include product
+catalog, customer region, payment method, and a realistic price distribution.
+Add some missing values across all columns, a few duplicate records, and occasional
+outlier prices. Save it to retail.csv.
 ```
 
 The agent will write the YAML config, validate it, and run the CLI to produce the file — no manual config writing needed.
