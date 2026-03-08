@@ -1,29 +1,29 @@
-# QuasiData
+# MessyData
 
 **Synthetic dirty data generator.** Define a schema in YAML, get a realistic messy DataFrame.
 
-QuasiData generates structured datasets from a declarative config and injects configurable anomalies — missing values, duplicates, invalid categories, bad dates, and outliers. Designed for testing data pipelines, validating data quality tooling, and feeding AI/ML workflows that need realistic imperfect data.
+MessyData generates structured datasets from a declarative config and injects configurable anomalies — missing values, duplicates, invalid categories, bad dates, and outliers. Designed for testing data pipelines, validating data quality tooling, and feeding AI/ML workflows that need realistic imperfect data.
 
 ---
 
 ## Claude Code Skill
 
-QuasiData includes a Claude Code skill that teaches any agent how to write configs, validate them, and use the CLI. Download [`SKILL.md`](SKILL.md) and place it at:
+MessyData includes a Claude Code skill that teaches any agent how to write configs, validate them, and use the CLI. Download [`SKILL.md`](SKILL.md) and place it at:
 
 ```
-~/.claude/skills/quasidata/SKILL.md
+~/.claude/skills/messydata/SKILL.md
 ```
 
-Then invoke it with `/quasidata` in any Claude Code session.
+Then invoke it with `/messydata` in any Claude Code session.
 
 ---
 
 ## Install
 
 ```bash
-uv add quasidata
+uv add messydata
 # or
-pip install quasidata
+pip install messydata
 ```
 
 ---
@@ -35,7 +35,7 @@ pip install quasidata
 With the skill installed, just describe what you need in plain English:
 
 ```
-/quasidata generate a retail transactions dataset with 1000 rows. Include product
+/messydata generate a retail transactions dataset with 1000 rows. Include product
 catalog, customer region, payment method, and a realistic price distribution.
 Add some missing values across all columns, a few duplicate records, and occasional
 outlier prices. Save it to retail.csv.
@@ -49,18 +49,18 @@ The agent will write the YAML config, validate it, and run the CLI to produce th
 
 ```bash
 # Generate to a file (format inferred from extension)
-quasidata generate my_config.yaml --rows 1000 --seed 42 --output data.csv
-quasidata generate my_config.yaml --rows 1000 --output data.parquet
-quasidata generate my_config.yaml --rows 1000 --output data.json
+messydata generate my_config.yaml --rows 1000 --seed 42 --output data.csv
+messydata generate my_config.yaml --rows 1000 --output data.parquet
+messydata generate my_config.yaml --rows 1000 --output data.json
 
 # Stream to stdout
-quasidata generate my_config.yaml --rows 1000
+messydata generate my_config.yaml --rows 1000
 
 # Validate a config without generating (exits 0/1 — useful in CI and agent loops)
-quasidata validate my_config.yaml
+messydata validate my_config.yaml
 
 # Print the full JSON Schema for the config format
-quasidata schema
+messydata schema
 ```
 
 ---
@@ -109,7 +109,7 @@ fields:
 ```
 
 ```python
-from quasidata import Pipeline
+from messydata import Pipeline
 
 df = Pipeline.from_config("my_config.yaml").run(n_rows=1000, seed=42)
 ```
@@ -119,7 +119,7 @@ df = Pipeline.from_config("my_config.yaml").run(n_rows=1000, seed=42)
 All distribution and anomaly types are importable as Python classes with full IDE support:
 
 ```python
-from quasidata import (
+from messydata import (
     DatasetSchema, Pipeline,
     FieldSpec, AnomalySpec,
     Lognormal, WeightedChoice, Sequential,
@@ -464,7 +464,7 @@ fields:
 
 ## Working with AI Agents
 
-QuasiData's YAML format is designed to be written by language models without any procedural code. The config is declarative, self-describing, and maps directly to real-world data concepts.
+MessyData's YAML format is designed to be written by language models without any procedural code. The config is declarative, self-describing, and maps directly to real-world data concepts.
 
 ### Why it works well for agents
 
@@ -476,7 +476,7 @@ QuasiData's YAML format is designed to be written by language models without any
 ### Prompt template
 
 ```
-Generate a QuasiData YAML config for a [domain] dataset.
+Generate a MessyData YAML config for a [domain] dataset.
 
 Dataset requirements:
 - Primary entity: [e.g., customer_id, order_id]

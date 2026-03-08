@@ -1,17 +1,17 @@
 ---
-name: quasidata
+name: messydata
 description: >
-  Use this skill when working with QuasiData — a synthetic dirty data generator.
+  Use this skill when working with MessyData — a synthetic dirty data generator.
   Covers writing and validating YAML configs, using the CLI, and the Python API.
-  Trigger on: "generate synthetic data", "quasidata config", "create a dataset schema",
+  Trigger on: "generate synthetic data", "messydata config", "create a dataset schema",
   "add anomalies", "fake data", "dirty data".
 argument-hint: "[task description or config path]"
 allowed-tools: Read, Bash(uv:*)
 ---
 
-# QuasiData Skill
+# MessyData Skill
 
-QuasiData generates realistic messy DataFrames from a YAML config. It produces structured data
+MessyData generates realistic messy DataFrames from a YAML config. It produces structured data
 with configurable anomalies (missing values, duplicates, invalid categories, bad dates, outliers).
 
 ## Workflow
@@ -23,16 +23,16 @@ Always follow this order:
 
 ```bash
 # 1. Validate (fast — no generation, exits 0/1)
-uv run quasidata validate my_config.yaml
+uv run messydata validate my_config.yaml
 
 # 2. Generate to stdout
-uv run quasidata generate my_config.yaml --rows 1000 --seed 42
+uv run messydata generate my_config.yaml --rows 1000 --seed 42
 
 # 3. Generate to file (format inferred from extension)
-uv run quasidata generate my_config.yaml --rows 1000 --output data.csv
-uv run quasidata generate my_config.yaml --rows 1000 --output data.parquet
-uv run quasidata generate my_config.yaml --rows 1000 --output data.json
-uv run quasidata generate my_config.yaml --rows 1000 --output data.jsonl
+uv run messydata generate my_config.yaml --rows 1000 --output data.csv
+uv run messydata generate my_config.yaml --rows 1000 --output data.parquet
+uv run messydata generate my_config.yaml --rows 1000 --output data.json
+uv run messydata generate my_config.yaml --rows 1000 --output data.jsonl
 ```
 
 Always run `validate` after writing a config. Fix any errors before generating.
@@ -326,13 +326,13 @@ anomalies:
 ## Python API
 
 ```python
-from quasidata import Pipeline
+from messydata import Pipeline
 
 # From YAML
 df = Pipeline.from_config("my_config.yaml").run(n_rows=1000, seed=42)
 
 # Python-first (same result, full IDE support)
-from quasidata import (
+from messydata import (
     DatasetSchema, Pipeline, FieldSpec, AnomalySpec,
     Lognormal, Uniform, Normal, WeightedChoice, WeightedChoiceMapping,
     Sequential, Mixture, Beta, Gamma, Weibull, Exponential,
@@ -366,18 +366,18 @@ df = Pipeline(schema).run(n_rows=1000, seed=42)
 ## CLI Reference
 
 ```
-quasidata generate CONFIG [OPTIONS]
+messydata generate CONFIG [OPTIONS]
   --rows  -n  INT     Number of rows (default: 1000)
   --seed  -s  INT     Random seed (default: 42)
   --output -o PATH    Output file (default: stdout)
   --format -f FMT     csv | parquet | json | jsonl
                       Inferred from output extension if omitted
 
-quasidata validate CONFIG
+messydata validate CONFIG
   Exits 0 on success, 1 on error. Prints field/anomaly count or error message.
   Use this after every config edit.
 
-quasidata schema
+messydata schema
   Prints the full JSON Schema for the config format to stdout.
   Useful for understanding the exact spec or passing to another model.
 ```
@@ -400,7 +400,7 @@ df.describe()          # distribution summary
 - Use `lognormal` for prices, revenue, durations — reflects real-world skew
 - Use `weighted_choice_mapping` when columns are always correlated (not separate `weighted_choice`)
 - Set `unique_per_id: true` for entity attributes (customer region, store tier, etc.)
-- Always validate before generating: `uv run quasidata validate config.yaml`
+- Always validate before generating: `uv run messydata validate config.yaml`
 - `columns: any` is only valid on `missing_values`
 - `mixture` components must be continuous (not `weighted_choice` or `sequential`)
 - All `weights` lists must sum to 1
