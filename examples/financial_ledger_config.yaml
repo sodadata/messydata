@@ -1,0 +1,143 @@
+name: financial_ledger
+primary_key: transaction_id
+
+# Most transactions are single-entry; some are split (2-3 lines)
+records_per_primary_key:
+  type: lognormal
+  mu: 0.5
+  sigma: 0.4
+
+anomalies:
+  # Some fields genuinely go missing (merchant_category for wire/fee entries, etc.)
+  - name: missing_values
+    prob: 1.0
+    rate: 0.04
+    columns: [merchant_category, channel]
+
+  # Duplicate transactions are a common ledger data quality issue
+  - name: duplicate_values
+    prob: 0.8
+    rate: 0.02
+
+  # Invalid status / channel codes from upstream system bugs
+  - name: invalid_category
+    prob: 0.4
+    rate: 0.02
+    columns: [status, channel]
+
+  # Large wire transfers and data-entry errors produce outlier amounts
+  - name: outliers
+    prob: 0.7
+    rate: 0.02
+    columns: [amount]
+    distribution:
+      type: lognormal
+      mu: 11.0    # ~$60k–$600k range
+      sigma: 0.8
+
+fields:
+  # ── Identity ─────────────────────────────────────────────────────────────
+
+  - name: transaction_id
+    dtype: int32
+    unique_per_id: true
+    nullable: false
+    distribution:
+      type: sequential
+      start: 100000
+      step: 1
+
+  - name: value_date
+    dtype: object
+    unique_per_id: true
+    nullable: false
+    distribution:
+      type: sequential
+      start: "2024-01-01"
+      step: 1
+
+  # ── Account / Customer (entity attributes) ────────────────────────────────
+
+  - name: account_id
+    dtype: int32
+    unique_per_id: true
+    nullable: false
+    distribution:
+      type: uniform
+      min: 10000000
+      max: 99999999
+
+  - name: customer_id
+    dtype: int32
+    unique_per_id: true
+    nullable: false
+    distribution:
+      type: uniform
+      min: 100000
+      max: 999999
+
+  # ── Geography & Currency (correlated — USD→US, EUR→DE, GBP→GB, etc.) ─────
+
+  - name: geo
+    dtype: object
+    unique_per_id: true
+    nullable: false
+    distribution:
+      type: weighted_choice_mapping
+      columns:
+        currency:     [USD,  EUR,  GBP,  CAD,  JPY,  CHF]
+        country_code: [US,   DE,   GB,   CA,   JP,   CH]
+      weights:        [0.55, 0.18, 0.12, 0.06, 0.05, 0.04]
+
+  # ── Transaction type & ledger entry direction (always correlated) ─────────
+
+  - name: txn_meta
+    dtype: object
+    nullable: false
+    distribution:
+      type: weighted_choice_mapping
+      columns:
+        transaction_type: [debit,    credit,   transfer, fee,  refund]
+        entry_type:       [DR,       CR,       DR,       DR,   CR]
+      weights:            [0.40,     0.30,     0.15,     0.08, 0.07]
+
+  # ── Amount (log-normal — most txns $50–$5k, long tail to $500k) ──────────
+
+  - name: amount
+    dtype: float32
+    nullable: false
+    distribution:
+      type: lognormal
+      mu: 5.5       # exp(5.5) ≈ $245 median
+      sigma: 1.2    # sigma 1.2 gives realistic spread
+
+  # ── Status (row-level — a split txn can have mixed line statuses) ─────────
+
+  - name: status
+    dtype: object
+    nullable: false
+    distribution:
+      type: weighted_choice
+      values:  [completed, pending, failed, reversed]
+      weights: [0.85,      0.08,    0.05,   0.02]
+
+  # ── Channel (entity attribute — one channel per transaction) ─────────────
+
+  - name: channel
+    dtype: object
+    unique_per_id: true
+    nullable: false
+    distribution:
+      type: weighted_choice
+      values:  [online, mobile, atm,  branch, wire]
+      weights: [0.40,   0.30,   0.15, 0.10,   0.05]
+
+  # ── Merchant category (row-level — varies per line item) ─────────────────
+
+  - name: merchant_category
+    dtype: object
+    nullable: false
+    distribution:
+      type: weighted_choice
+      values:  [retail, food_beverage, travel, utilities, healthcare, entertainment]
+      weights: [0.30,   0.20,          0.15,   0.15,      0.10,       0.10]
