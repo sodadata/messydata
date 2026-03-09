@@ -18,7 +18,7 @@ Then invoke it with `/messydata` in any Claude Code session.
 
 ---
 
-## Install (not published yet)
+## Install
 
 ```bash
 uv add messydata
