@@ -6,6 +6,9 @@ build-backend = "hatchling.build"
 name = "messydata"
 version = "0.1.0"
 description = "Synthetic dirty data generator"
+readme = "README.md"
+license = { text = "Apache Software License (Apache-2.0)" }
+authors = [{ name = "Santiago Viquez", email = "santiago@soda.io" }]
 requires-python = ">=3.9"
 dependencies = [
     "pyyaml",
@@ -21,3 +24,6 @@ dev = ["pytest"]
 
 [project.scripts]
 messydata = "messydata.cli:main"
+
+[tool.hatch.build.targets.sdist]
+exclude = [".venv", "list", "dist", "tests", "examples"]
