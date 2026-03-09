@@ -35,10 +35,10 @@ pip install messydata
 With the skill installed, just describe what you need in plain English:
 
 ```
-/messydata generate a retail transactions dataset with 1000 rows. Include product
-catalog, customer region, payment method, and a realistic price distribution.
-Add some missing values across all columns, a few duplicate records, and occasional
-outlier prices. Save it to retail.csv.
+/messydata generate a retail transactions dataset starting from 2024-01-01, 500 rows
+per day. Include product catalog, customer region, payment method, and a realistic
+price distribution. Add some missing values across all columns, a few duplicate
+records, and occasional outlier prices. Save it to retail.csv.
 ```
 
 The agent will write the YAML config, validate it, and run the CLI to produce the file — no manual config writing needed.
@@ -55,6 +55,12 @@ messydata generate my_config.yaml --rows 1000 --output data.json
 
 # Stream to stdout
 messydata generate my_config.yaml --rows 1000
+
+# Single day (requires temporal: true on a date field)
+messydata generate my_config.yaml --start-date 2025-06-01 --rows 500
+
+# Date range — --rows is rows per day
+messydata generate my_config.yaml --start-date 2025-01-01 --end-date 2025-03-31 --rows 500 --output data.csv
 
 # Validate a config without generating (exits 0/1 — useful in CI and agent loops)
 messydata validate my_config.yaml
@@ -91,6 +97,15 @@ fields:
       type: sequential
       start: 1
 
+  - name: order_date
+    dtype: object
+    unique_per_id: true
+    nullable: false
+    temporal: true                  # marks this as the date anchor
+    distribution:
+      type: sequential
+      start: "2024-01-01"
+
   - name: amount
     dtype: float32
     nullable: false
@@ -111,7 +126,16 @@ fields:
 ```python
 from messydata import Pipeline
 
-df = Pipeline.from_config("my_config.yaml").run(n_rows=1000, seed=42)
+pipeline = Pipeline.from_config("my_config.yaml")
+
+# All rows, sequential dates
+df = pipeline.run(n_rows=1000, seed=42)
+
+# All rows pinned to a single date
+df = pipeline.run_for_date("2025-06-01", n_rows=500)
+
+# One generation pass per day, concatenated
+df = pipeline.run_date_range("2025-01-01", "2025-03-31", rows_per_day=500)
 ```
 
 ### Python-first
