@@ -13,7 +13,7 @@ def main():
 
 @main.command()
 @click.argument("config", type=click.Path(exists=True))
-@click.option("--rows", "-n", default=1000, show_default=True, help="Number of rows to generate.")
+@click.option("--rows", "-n", default=1000, show_default=True, help="Number of rows (or rows per day in date mode).")
 @click.option("--seed", "-s", default=42, show_default=True, help="Random seed.")
 @click.option("--output", "-o", default=None, help="Output file path. Defaults to stdout (CSV).")
 @click.option(
@@ -22,9 +22,17 @@ def main():
     default=None,
     help="Output format. Inferred from --output extension if not set; defaults to csv.",
 )
-def generate(config, rows, seed, output, fmt):
-    """Generate a dataset from CONFIG and write it to a file or stdout."""
+@click.option("--start-date", default=None, help="Generate for this date only, or start of a range (YYYY-MM-DD).")
+@click.option("--end-date", default=None, help="End of date range (YYYY-MM-DD). Requires --start-date.")
+def generate(config, rows, seed, output, fmt, start_date, end_date):
+    """Generate a dataset from CONFIG and write it to a file or stdout.
+
+    Use --start-date / --end-date to generate date-aware data. --rows becomes rows per day.
+    """
     from .pipeline import Pipeline
+
+    if end_date and not start_date:
+        raise click.UsageError("--end-date requires --start-date.")
 
     # Infer format from output extension if not explicitly set
     if fmt is None:
@@ -42,7 +50,14 @@ def generate(config, rows, seed, output, fmt):
     if fmt == "parquet" and output is None:
         raise click.UsageError("parquet format requires --output (cannot write to stdout).")
 
-    df = Pipeline.from_config(config).run(n_rows=rows, seed=seed)
+    pipeline = Pipeline.from_config(config)
+
+    if start_date and end_date:
+        df = pipeline.run_date_range(start_date, end_date, rows_per_day=rows, seed=seed)
+    elif start_date:
+        df = pipeline.run_for_date(start_date, n_rows=rows, seed=seed)
+    else:
+        df = pipeline.run(n_rows=rows, seed=seed)
 
     if fmt == "csv":
         text = df.to_csv(index=False)

@@ -14,6 +14,7 @@ class FieldSpec(BaseModel):
     distribution: Distribution
     unique_per_id: bool = False
     nullable: bool = True
+    temporal: bool = False
 
 
 class AnomalySpec(BaseModel):

@@ -50,6 +50,7 @@ fields:
     unique_per_id: true
     dtype: object
     nullable: false
+    temporal: true
     distribution:
       type: sequential
       start: "2023-01-01"

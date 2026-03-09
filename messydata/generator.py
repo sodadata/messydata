@@ -1,17 +1,39 @@
+from __future__ import annotations
+
+from datetime import date
+from typing import Optional
+
 import numpy as np
 import pandas as pd
 
-from .distributions import Sequential, WeightedChoiceMapping
+from .distributions import Sequential, WeightedChoice, WeightedChoiceMapping
 from .schema import DatasetSchema
 
 
-def generate_data(schema: DatasetSchema, n_rows: int = 1000, seed: int = 42) -> pd.DataFrame:
+def generate_data(
+    schema: DatasetSchema,
+    n_rows: int = 1000,
+    seed: int = 42,
+    date_override: Optional[date] = None,
+) -> pd.DataFrame:
     if seed is not None:
         np.random.seed(seed)
 
+    # When date_override is set, pin temporal fields to that date
+    if date_override is not None:
+        target_str = str(date_override)
+        fields = [
+            f.model_copy(update={"distribution": WeightedChoice(values=[target_str], weights=[1.0])})
+            if f.temporal
+            else f
+            for f in schema.fields
+        ]
+    else:
+        fields = schema.fields
+
     # Initialise sequential state for each sequential field
     seq_state: dict[str, object] = {}
-    for field in schema.fields:
+    for field in fields:
         if isinstance(field.distribution, Sequential):
             seq_state[field.name] = field.distribution.initial()
 
@@ -22,7 +44,7 @@ def generate_data(schema: DatasetSchema, n_rows: int = 1000, seed: int = 42) -> 
         n = max(1, int(schema.records_per_primary_key.sample(1)[0]))
         batch: dict[str, object] = {}
 
-        for field in schema.fields:
+        for field in fields:
             dist = field.distribution
             unique = field.unique_per_id
 

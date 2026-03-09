@@ -10,11 +10,13 @@ def inject_duplicates(df: pd.DataFrame, rate: float) -> pd.DataFrame:
     return pd.concat([df, dup_rows], ignore_index=True)
 
 
-def inject_missing(df: pd.DataFrame, rate: float) -> pd.DataFrame:
-    n_cells = int(df.size * rate)
+def inject_missing(df: pd.DataFrame, rate: float, cols: list[str] | None = None) -> pd.DataFrame:
+    target_cols = [c for c in (cols or df.columns) if c in df.columns]
+    n_cells = int(len(df) * len(target_cols) * rate)
+    col_indices = [df.columns.get_loc(c) for c in target_cols]
     for _ in range(n_cells):
         i = np.random.randint(0, len(df))
-        j = np.random.randint(0, len(df.columns))
+        j = col_indices[np.random.randint(0, len(col_indices))]
         df.iat[i, j] = np.nan
     return df
 
@@ -64,7 +66,8 @@ def inject_anomalies(schema: DatasetSchema, df: pd.DataFrame) -> pd.DataFrame:
         if np.random.random() > 1 - anomaly.prob:
             cols = anomaly.columns
             if anomaly.name == "missing_values":
-                df = inject_missing(df, anomaly.rate)
+                missing_cols = None if cols == "any" else cols
+                df = inject_missing(df, anomaly.rate, cols=missing_cols)
             elif anomaly.name == "duplicate_values":
                 df = inject_duplicates(df, anomaly.rate)
             elif anomaly.name == "invalid_category":

@@ -174,6 +174,7 @@ df = Pipeline(schema).run(n_rows=1000, seed=42)
 | `distribution` | distribution block | yes | — | How values are sampled (see [Distribution Reference](#distribution-reference)) |
 | `unique_per_id` | bool | no | `false` | If `true`, one value is drawn per primary key group and repeated for all rows in that group |
 | `nullable` | bool | no | `true` | Marks the field as nullable — used by anomaly injection |
+| `temporal` | bool | no | `false` | Marks this field as the date anchor for `run_for_date` / `run_date_range`. Exactly one field per schema. |
 
 `unique_per_id: true` is appropriate for entity-level attributes that don't vary per transaction — e.g., a customer's region, a store's tier, a payment method for an order.
 
@@ -335,6 +336,53 @@ anomalies:
 
 ---
 
+## Simulating Live & Historical Data
+
+Mark one date field as `temporal: true` to unlock date-aware generation modes.
+
+```yaml
+- name: transaction_date
+  dtype: object
+  unique_per_id: true
+  nullable: false
+  temporal: true                    # ← enables date-aware modes
+  distribution:
+    type: sequential
+    start: "2024-01-01"
+```
+
+Then use `run_for_date` or `run_date_range` instead of `run`:
+
+```python
+from datetime import date
+from messydata import Pipeline
+
+pipeline = Pipeline.from_config("config.yaml")
+
+# Generate for a single day
+df = pipeline.run_for_date("2025-06-01", n_rows=500)
+
+# Generate a historical range
+df = pipeline.run_date_range("2025-01-01", "2025-03-31", rows_per_day=500)
+
+# Hybrid: backfill to today, then run daily from cron
+df = pipeline.run_date_range("2025-01-01", date.today(), rows_per_day=500)
+```
+
+Or from the CLI:
+
+```bash
+# Single day
+messydata generate config.yaml --start-date 2025-06-01 --rows 500
+
+# Date range (--rows = rows per day)
+messydata generate config.yaml --start-date 2025-01-01 --end-date 2025-03-31 --rows 500
+```
+
+Each day is generated independently with its own seed offset — anomaly patterns vary across days. Anomalies that target the date field (e.g. `invalid_date`) still apply, so filter them out if you need clean date values downstream.
+
+---
+
 ## Full Example Config
 
 ```yaml
@@ -392,6 +440,7 @@ fields:
     unique_per_id: true
     dtype: object
     nullable: false
+    temporal: true
     distribution:
       type: sequential
       start: "2023-01-01"

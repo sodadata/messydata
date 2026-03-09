@@ -64,10 +64,15 @@ anomalies: [<anomaly_spec>, ...]        # optional — data quality injections
   unique_per_id: <bool>    # optional, default: false
                            # true = one value drawn per PK group, repeated for all rows
   nullable: <bool>         # optional, default: true
+  temporal: <bool>         # optional, default: false
+                           # true = this is the date anchor field for run_for_date / run_date_range
 ```
 
 **`unique_per_id: true`** — use for entity attributes that don't vary per row within a group:
 store region, customer tier, payment method for an order, product category for a transaction.
+
+**`temporal: true`** — marks the field as the date anchor. Required for date-aware generation modes.
+Only one field should have `temporal: true`. Always combine with `unique_per_id: true`.
 
 ---
 
@@ -323,6 +328,77 @@ anomalies:
 
 ---
 
+## Date-Aware Generation
+
+MessyData supports three temporal generation modes via `run_for_date` and `run_date_range`.
+These require exactly one field with `temporal: true` in the schema — that field's distribution
+is overridden to emit the target date for every row in that run.
+
+### Mark the date field as temporal
+
+```yaml
+- name: transaction_date
+  dtype: object
+  unique_per_id: true
+  nullable: false
+  temporal: true                          # ← enables date-aware modes
+  distribution:
+    type: sequential
+    start: "2024-01-01"                   # used by plain run(); ignored by run_for_date
+```
+
+### Python API — date modes
+
+```python
+from datetime import date
+from messydata import Pipeline
+
+pipeline = Pipeline.from_config("config.yaml")
+
+# Single day — every row gets exactly this date
+df = pipeline.run_for_date("2025-06-01", n_rows=500)
+df = pipeline.run_for_date(date(2025, 6, 1), n_rows=500, seed=42)
+
+# Date range — one generation pass per day, concatenated
+df = pipeline.run_date_range("2025-01-01", "2025-03-31", rows_per_day=500, seed=42)
+
+# Hybrid: backfill to today, then schedule daily
+from datetime import date
+df = pipeline.run_date_range("2025-01-01", date.today(), rows_per_day=500)
+```
+
+`run_date_range` offsets the seed per day so anomaly patterns vary across days. Passes a
+`ValueError` if `end < start`, or if no `temporal` field exists in the schema.
+
+### CLI — date modes
+
+```bash
+# Single day
+messydata generate config.yaml --start-date 2025-06-01 --rows 500
+
+# Date range (--rows = rows per day)
+messydata generate config.yaml --start-date 2025-01-01 --end-date 2025-03-31 --rows 500 --output data.csv
+```
+
+### Common daily-cron pattern
+
+```python
+# generate_daily.py — run from cron: 0 2 * * * uv run python generate_daily.py
+import sqlite3
+from datetime import date
+from messydata import Pipeline
+
+conn = sqlite3.connect("data.db")
+last = conn.execute("SELECT MAX(transaction_date) FROM data").fetchone()[0]
+start = last or "2024-01-01"
+
+pipeline = Pipeline.from_config("config.yaml")
+df = pipeline.run_date_range(start, date.today(), rows_per_day=500)
+df.to_sql("data", conn, if_exists="append", index=False)
+```
+
+---
+
 ## Python API
 
 ```python
@@ -405,3 +481,4 @@ df.describe()          # distribution summary
 - `mixture` components must be continuous (not `weighted_choice` or `sequential`)
 - All `weights` lists must sum to 1
 - All lists under `weighted_choice_mapping.columns` must have equal length
+- Set `temporal: true` on the date field when using `run_for_date` or `run_date_range` — exactly one field, always paired with `unique_per_id: true`
