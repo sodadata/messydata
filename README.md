@@ -21,7 +21,7 @@ Then invoke it with `/messydata` in any Claude Code session.
 ## Install
 
 ```bash
-uv add messydata
+uv pip install messydata
 # or
 pip install messydata
 ```
